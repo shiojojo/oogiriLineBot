@@ -9,10 +9,8 @@ function OdaiMessage() {
  　// お題のラスト行を取得
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('お題');
   var lastRow = sheet.getLastRow();
-  
   //2行目～最終行の間で、ランダムな行番号を算出する
   var row = Math.ceil(Math.random() * (lastRow-1)) + 1;
-  
   //ランダムに算出した行番号のタイトルとURLを取得
   var OdaiMessage = sheet.getRange(row, 2).getValue();
  
@@ -23,34 +21,47 @@ function OdaisyasinMessage() {
  　// お題のラスト行を取得
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('写真');
   var lastRow = sheet.getLastRow();
-  
   //2行目～最終行の間で、ランダムな行番号を算出する
   var row = Math.ceil(Math.random() * (lastRow-1)) + 1;
-  
   //ランダムに算出した行番号のタイトルとURLを取得
   var OdaiSyasinMessage = sheet.getRange(row, 2).getValue();
  
   return OdaiSyasinMessage;
 }
 
+function ColumLastRow(colum) {
+  // 作成中　列指定の最終行を取得
+  var columnBVals = sheet.getRange('C:C').getValues();
+  var lastRow = columnBVals.filter(String).length + 1; 
+}  
+
 function kaitou(sourceGroupId,sourceUserId,userMessage) {
   // 回答を保存する処理
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('回答');
-  var lastRow = sheet.getLastRow() + 1;
+  var columnBVals = sheet.getRange('C:C').getValues();
+  var lastRow = columnBVals.filter(String).length + 1; 
 
   if (sourceGroupId) {
     //グループで作成したシートが存在するならそのシートに記載する。
     var groupSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId);
-    var groupLastRow = groupSheet.getLastRow() + 1;
+    //　C列を配列で取得
+    var columnBVals = groupSheet.getRange('C:C').getValues();
+    //空白を除いて、配列の数を取得
+    var groupLastRow = columnBVals.filter(String).length + 1; 
+    //現在のお題を取得
     var GenzainoOdai = groupSheet.getRange(2,6).getValue();
+    
+    //グループシートに情報を入力
     groupSheet.getRange(groupLastRow,1).setValue(GenzainoOdai);
-    groupSheet.getRange(groupLastRow,3).setValue(sourceUserId);
-    groupSheet.getRange(groupLastRow,2).setValue(userMessage);    
+    groupSheet.getRange(groupLastRow,2).setValue(userMessage);
+    groupSheet.getRange(groupLastRow,3).setValue(sourceUserId); 
+    groupSheet.getRange(groupLastRow,4).setFormula("=VLOOKUP(C" + groupLastRow +",$F$4:$G$8,2,false)");
   }
   //回答シートに記載
   sheet.getRange(lastRow,1).setValue(sourceGroupId);
   sheet.getRange(lastRow,3).setValue(sourceUserId);
   sheet.getRange(lastRow,2).setValue(userMessage);
+  sheet.getRange(lastRow,4).setValue('aaaaa');
 }
 
 
