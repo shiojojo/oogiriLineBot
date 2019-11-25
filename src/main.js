@@ -29,26 +29,25 @@ function OdaisyasinMessage() {
   return OdaiSyasinMessage;
 }
 
-function ColumLastRow(colum) {
-  // 作成中　列指定の最終行を取得
-  var columnBVals = sheet.getRange('C:C').getValues();
-  var lastRow = columnBVals.filter(String).length + 1; 
+function ColumLastRowPlusOne(sheet,colum) {
+  // 列指定の最終行に一足した値を取得する。
+  // 指定の列を配列として取得
+  var columnVal = sheet.getRange(colum).getValues();
+  //　空白を除いて、配列の数を取得して、１を加える
+  var lastRowPlusOne = columnVal.filter(String).length + 1; 
+  
+  return lastRowPlusOne
 }  
 
 function kaitou(sourceGroupId,sourceUserId,userMessage) {
   // 回答を保存する処理
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('回答');
-  var columnBVals = sheet.getRange('C:C').getValues();
-  var lastRow = columnBVals.filter(String).length + 1; 
+  var lastRow = ColumLastRowPlusOne(sheet,'C:C');
 
   if (sourceGroupId) {
     //グループで作成したシートが存在するならそのシートに記載する。
     var groupSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId);
-    //　C列を配列で取得
-    var columnBVals = groupSheet.getRange('C:C').getValues();
-    //空白を除いて、配列の数を取得
-    var groupLastRow = columnBVals.filter(String).length + 1; 
-    //現在のお題を取得
+    var groupLastRow = ColumLastRowPlusOne(groupSheet,'C:C')
     var GenzainoOdai = groupSheet.getRange(2,6).getValue();
     
     //グループシートに情報を入力
