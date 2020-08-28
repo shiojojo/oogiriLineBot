@@ -19,7 +19,7 @@ function OdaiMessage() {
 
 function OdaisyasinMessage() {
  　// お題のラスト行を取得
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('写真');
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('画像');
   var lastRow = sheet.getLastRow();
   //2行目～最終行の間で、ランダムな行番号を算出する
   var row = Math.ceil(Math.random() * (lastRow-1)) + 1;
@@ -44,7 +44,7 @@ function kaitou(sourceGroupId,sourceUserId,userMessage) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('回答');
   var lastRow = ColumLastRowPlusOne(sheet,'C:C');
 
-  if (sourceGroupId) {
+  if (SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId)) {
     //グループで作成したシートが存在するならそのシートに記載する。
     var groupSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId);
     var groupLastRow = ColumLastRowPlusOne(groupSheet,'C:C')
@@ -60,7 +60,6 @@ function kaitou(sourceGroupId,sourceUserId,userMessage) {
   sheet.getRange(lastRow,1).setValue(sourceGroupId);
   sheet.getRange(lastRow,3).setValue(sourceUserId);
   sheet.getRange(lastRow,2).setValue(userMessage);
-  sheet.getRange(lastRow,4).setValue('aaaaa');
 }
 
 
@@ -76,6 +75,10 @@ function doPost(e) {
   var sourceGroupId = json.events[0].source.groupId;
   var sourceUserId = json.events[0].source.userId;
   
+  //var sourceGroupId = 'C86096a86ba1ccf8d7e91fbee7d39c607';
+  //console.log(e);
+  
+  
   // 返信するためのトークンを取得
   var replyToken = json.events[0].replyToken;
   if (typeof replyToken === 'undefined') {
@@ -84,21 +87,31 @@ function doPost(e) {
 
   // 返信するメッセージを配列で用意
   var replyMessages;
-  if (userMessage == 'お題')  {
+  if (userMessage === 'お題')  {
     //　お題とメッセージ来た時の処理
-    var groupSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId);
+    
     var odai = OdaiMessage()
-    groupSheet.getRange(2,6).setValue(odai);    
+    if(SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId)) {
+      var groupSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId);
+      groupSheet.getRange(2,6).setValue(odai);
+    }
     replyMessages = [{'type': 'text', 'text': odai}];
     postToLine(replyToken,replyMessages);
 
-  } else if (userMessage == '写真') {
-    //　写真とメッセージ来た時の処理    
-    replyMessages = [{ "type": "image","originalContentUrl": OdaisyasinMessage() ,"previewImageUrl": OdaisyasinMessage()}];
+  } else if (userMessage === '写真') {
+    //　写真とメッセージ来た時の処理
+    var odaiMessage = "写真でひとこと";
+    var odaiImage = OdaisyasinMessage();
+    if(SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId)) {
+      var groupSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId);
+      groupSheet.getRange(2,6).setValue(odaiImage);
+    }
+    
+    replyMessages = [ {'type': 'text', 'text': odaiMessage}, { "type": "image","originalContentUrl": odaiImage ,"previewImageUrl": odaiImage}];
     //sheet.getRange("A1").setValue(OdaisyasinMessage());
     postToLine(replyToken,replyMessages);
     
-  } else if (userMessage == '募集') {
+  } else if (userMessage === '募集') {
     // 募集とメッセージ来た時の処理
     replyMessages = [{'type': 'text', 'text': BOSYU_BUNSYOU }, {'type': 'text', 'text': BOSYU_SYASHIN }];
     //sheet.getRange("A1").setValue(OdaiSyasinMessage());
