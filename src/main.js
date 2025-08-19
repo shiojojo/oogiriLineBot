@@ -5,28 +5,13 @@
 var linePost = 'https://api.line.me/v2/bot/message/reply';
 
 function OdaiMessage() {
-  // お題のラスト行を取得
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('お題');
-  var lastRow = sheet.getLastRow();
-  //2行目～最終行の間で、ランダムな行番号を算出する
-  var row = Math.ceil(Math.random() * (lastRow - 1)) + 1;
-  //ランダムに算出した行番号のタイトルとURLを取得
-  var OdaiMessage = sheet.getRange(row, 2).getValue();
-
-  return OdaiMessage;
+  return getRandomFromSheet('お題', 2);
 }
 
 function OdaisyasinMessage() {
-  // お題のラスト行を取得
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('画像');
-  var lastRow = sheet.getLastRow();
-  //2行目～最終行の間で、ランダムな行番号を算出する
-  var row = Math.ceil(Math.random() * (lastRow - 1)) + 1;
-  //ランダムに算出した行番号のタイトルとURLを取得
-  var OdaiSyasinMessage = sheet.getRange(row, 2).getValue();
-
-  return OdaiSyasinMessage;
+  return getRandomFromSheet('画像', 2);
 }
+// Helper functions moved to src/helpers.js
 
 function ColumLastRowPlusOne(sheet, colum) {
   // 列指定の最終行に一足した値を取得する。
@@ -104,41 +89,26 @@ function doPost(e) {
     //　お題とメッセージ来た時の処理
 
     var odai = OdaiMessage();
-    if (SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId)) {
-      var groupSheet =
-        SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId);
-      groupSheet.getRange(2, 6).setValue(odai);
-    }
-    replyMessages = [{ type: 'text', text: odai }];
+    setGroupOdaiValue(sourceGroupId, odai);
+    replyMessages = [createTextMessage(odai)];
     postToLine(replyToken, replyMessages);
   } else if (userMessage === '写真') {
     //　写真とメッセージ来た時の処理
     var odaiMessage = '写真でひとこと';
     var odaiImage = OdaisyasinMessage();
-    if (SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId)) {
-      var groupSheet =
-        SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId);
-      groupSheet.getRange(2, 6).setValue(odaiImage);
-    }
-
+    setGroupOdaiValue(sourceGroupId, odaiImage);
     replyMessages = [
-      { type: 'text', text: odaiMessage },
-      { type: 'text', text: odaiImage },
-      {
-        type: 'image',
-        originalContentUrl: odaiImage,
-        previewImageUrl: odaiImage,
-      },
+      createTextMessage(odaiMessage),
+      createTextMessage(odaiImage),
+      createImageMessage(odaiImage),
     ];
-    //sheet.getRange("A1").setValue(OdaisyasinMessage());
     postToLine(replyToken, replyMessages);
   } else if (userMessage === '募集') {
     // 募集とメッセージ来た時の処理
     replyMessages = [
-      { type: 'text', text: BOSYU_BUNSYOU },
-      { type: 'text', text: BOSYU_SYASHIN },
+      createTextMessage(BOSYU_BUNSYOU),
+      createTextMessage(BOSYU_SYASHIN),
     ];
-    //sheet.getRange("A1").setValue(OdaiSyasinMessage());
     postToLine(replyToken, replyMessages);
   } else {
     kaitou(sourceGroupId, sourceUserId, userMessage);
