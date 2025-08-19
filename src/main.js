@@ -43,6 +43,7 @@ function kaitou(sourceGroupId,sourceUserId,userMessage) {
   // 回答を保存する処理
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('回答');
   var lastRow = ColumLastRowPlusOne(sheet,'C:C');
+  var today = new Date();
 
   if (SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId)) {
     //グループで作成したシートが存在するならそのシートに記載する。
@@ -51,15 +52,24 @@ function kaitou(sourceGroupId,sourceUserId,userMessage) {
     var GenzainoOdai = groupSheet.getRange(2,6).getValue();
     
     //グループシートに情報を入力
-    groupSheet.getRange(groupLastRow,1).setValue(GenzainoOdai);
+    if (GenzainoOdai.includes("https://drive.usercontent.google.com/download")) {
+      groupSheet.getRange(groupLastRow,1).setFormula("=IMAGE(\"" + GenzainoOdai +"\")");
+      groupSheet.setRowHeight(groupLastRow,120);
+    } else {
+      groupSheet.getRange(groupLastRow,1).setValue(GenzainoOdai);
+      groupSheet.setRowHeight(groupLastRow, 21);
+    }
     groupSheet.getRange(groupLastRow,2).setValue(userMessage);
-    groupSheet.getRange(groupLastRow,3).setValue(sourceUserId); 
+    groupSheet.getRange(groupLastRow,3).setValue(sourceUserId); // 非表示
     groupSheet.getRange(groupLastRow,4).setFormula("=VLOOKUP(C" + groupLastRow +",$F$4:$G$8,2,false)");
+    groupSheet.getRange(groupLastRow,5).setValue(today);
+
   }
   //回答シートに記載
   sheet.getRange(lastRow,1).setValue(sourceGroupId);
   sheet.getRange(lastRow,3).setValue(sourceUserId);
   sheet.getRange(lastRow,2).setValue(userMessage);
+  sheet.getRange(lastRow,4).setValue(today);
 }
 
 
@@ -107,7 +117,7 @@ function doPost(e) {
       groupSheet.getRange(2,6).setValue(odaiImage);
     }
     
-    replyMessages = [ {'type': 'text', 'text': odaiMessage}, { "type": "image","originalContentUrl": odaiImage ,"previewImageUrl": odaiImage}];
+    replyMessages = [ {'type': 'text', 'text': odaiMessage},{'type': 'text', 'text': odaiImage}, { "type": "image","originalContentUrl": odaiImage ,"previewImageUrl": odaiImage}];
     //sheet.getRange("A1").setValue(OdaisyasinMessage());
     postToLine(replyToken,replyMessages);
     
