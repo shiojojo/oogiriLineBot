@@ -1,52 +1,23 @@
+// Return a random image URL/text from the '画像' sheet (col 2)
 function OdaiImage() {
-  // お題のラスト行を取得
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('画像');
-  const lastRow = sheet.getLastRow();
-  //2行目～最終行の間で、ランダムな行番号を算出する
-  // const row = Math.floor(Math.random() * (lastRow - 1)) + 2;
-  const row = Math.ceil(Math.random() * (lastRow - 1)) + 1;
-  //ランダムに算出した行番号のタイトルとURLを取得
-  const OdaiImageMessage = sheet.getRange(row, 2).getValue();
-
-  return OdaiImageMessage;
+  return getRandomFromSheet('画像', 2);
 }
 
-function linePushImage(e) {
+function linePushImage() {
   const odaiImage = OdaiImage();
-  if (SpreadsheetApp.getActiveSpreadsheet().getSheetByName(LINE_USERID)) {
-    const groupSheet =
-      SpreadsheetApp.getActiveSpreadsheet().getSheetByName(LINE_USERID);
-    groupSheet.getRange(2, 6).setValue(odaiImage);
+
+  // Update group sheet if it exists
+  if (typeof LINE_USERID !== 'undefined' && LINE_USERID) {
+    setGroupOdaiValue(LINE_USERID, odaiImage);
+
+    // Use shared helper to push messages
+    const messages = [
+      createTextMessage('写真でひとこと'),
+      createTextMessage(odaiImage),
+      createImageMessage(odaiImage),
+    ];
+    sendPushToLine(LINE_USERID, messages);
+  } else {
+    Logger.log('linePushImage aborted: LINE_USERID is not set');
   }
-  lineReply('写真でひとこと');
-  lineImageReply(odaiImage);
-}
-
-// LINEへの応答
-function lineImageReply(replyImage) {
-  const headers = {
-    Authorization: 'Bearer ' + LINE_TOKEN,
-    'Content-type': 'application/json',
-  };
-  const messages = {
-    headers: headers,
-    to: LINE_USERID,
-    messages: [
-      {
-        type: 'text',
-        text: replyImage,
-      },
-      {
-        type: 'image',
-        originalContentUrl: replyImage,
-        previewImageUrl: replyImage,
-      },
-    ],
-  };
-  const options = {
-    headers: headers,
-    payload: JSON.stringify(messages),
-  };
-
-  UrlFetchApp.fetch(LINE_ENDPOINT, options);
 }

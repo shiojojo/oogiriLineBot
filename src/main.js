@@ -1,8 +1,7 @@
 //var CHANNEL_ACCESS_TOKEN = '';  // LINE Bot のアクセストークン
 //var BOSYU_BUNSYOU = '';　　　　　// 　お題シート
 //var BOSYU_SYASHIN = '';　　　　　//　写真シート
-//　HTTPリクエスト　POST
-const linePost = 'https://api.line.me/v2/bot/message/reply';
+// HTTP: reply/send helpers are in src/helpers.js
 
 function OdaiMessage() {
   return getRandomFromSheet('お題', 2);
@@ -90,7 +89,7 @@ function doPost(e) {
     const odai = OdaiMessage();
     setGroupOdaiValue(sourceGroupId, odai);
     replyMessages = [createTextMessage(odai)];
-    postToLine(replyToken, replyMessages);
+    sendReplyToLine(replyToken, replyMessages);
   } else if (userMessage === '写真') {
     //　写真とメッセージ来た時の処理
     const odaiMessage = '写真でひとこと';
@@ -101,45 +100,17 @@ function doPost(e) {
       createTextMessage(odaiImage),
       createImageMessage(odaiImage),
     ];
-    postToLine(replyToken, replyMessages);
+    sendReplyToLine(replyToken, replyMessages);
   } else if (userMessage === '募集') {
     // 募集とメッセージ来た時の処理
     replyMessages = [
       createTextMessage(BOSYU_BUNSYOU),
       createTextMessage(BOSYU_SYASHIN),
     ];
-    postToLine(replyToken, replyMessages);
+    sendReplyToLine(replyToken, replyMessages);
   } else {
     kaitou(sourceGroupId, sourceUserId, userMessage);
   }
 }
 
-function postToLine(replyToken, messages) {
-  // Validate input
-  if (!Array.isArray(messages) || messages.length === 0) return;
-  if (typeof CHANNEL_ACCESS_TOKEN === 'undefined' || !CHANNEL_ACCESS_TOKEN) {
-    Logger.log('postToLine aborted: CHANNEL_ACCESS_TOKEN is not set');
-    return;
-  }
-
-  // メッセージをLINEに送信
-  try {
-    const payload = JSON.stringify({
-      replyToken: replyToken,
-      messages: messages,
-    });
-    UrlFetchApp.fetch(linePost, {
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        Authorization: 'Bearer ' + CHANNEL_ACCESS_TOKEN,
-      },
-      method: 'post',
-      payload: payload,
-    });
-  } catch (err) {
-    // Log and swallow to avoid breaking caller
-    Logger.log('postToLine error: ' + (err && err.message ? err.message : err));
-    return;
-  }
-  // return ContentService.createTextOutput(JSON.stringify({'content': 'post ok'})).setMimeType(ContentService.MimeType.JSON);
-}
+// reply/send implemented in helpers.js
