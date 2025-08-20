@@ -11,9 +11,9 @@ function getRandomFromSheet(sheetName, colIndex) {
 }
 
 function setGroupOdaiValue(sourceGroupId, value) {
-  if (SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId)) {
-    const groupSheet =
-      SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const groupSheet = ss.getSheetByName(sourceGroupId);
+  if (groupSheet) {
     groupSheet.getRange(2, 6).setValue(value);
   }
 }

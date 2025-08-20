@@ -25,14 +25,14 @@ function ColumLastRowPlusOne(sheet, colum) {
 
 function kaitou(sourceGroupId, sourceUserId, userMessage) {
   // 回答を保存する処理
-  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('回答');
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName('回答');
   const lastRow = ColumLastRowPlusOne(sheet, 'C:C');
   const today = new Date();
 
-  if (SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId)) {
-    //グループで作成したシートが存在するならそのシートに記載する。
-    const groupSheet =
-      SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId);
+  //グループで作成したシートが存在するならそのシートに記載する。
+  const groupSheet = ss.getSheetByName(sourceGroupId);
+  if (groupSheet) {
     const groupLastRow = ColumLastRowPlusOne(groupSheet, 'C:C');
     const GenzainoOdai = groupSheet.getRange(2, 6).getValue();
 
@@ -67,7 +67,6 @@ function doPost(e) {
 
   // Jsonにパース
   const json = JSON.parse(e.postData.contents);
-  console.log(json);
 
   // 送信されてきた情報を取得
   const userMessage = json.events[0].message.text;
