@@ -3,14 +3,14 @@ function OdaiMessageCron() {
 }
 
 function linePush() {
-  var odai = OdaiMessageCron();
+  const odai = OdaiMessageCron();
 
   if (typeof LINE_USERID !== 'undefined' && LINE_USERID) {
     // update group sheet if exists
     setGroupOdaiValue(LINE_USERID, odai);
 
     // push two messages: label and the actual odai
-    var messages = [createTextMessage('お題'), createTextMessage(odai)];
+    const messages = [createTextMessage('お題'), createTextMessage(odai)];
     sendPushToLine(LINE_USERID, messages);
   } else {
     Logger.log('linePush aborted: LINE_USERID is not set');
