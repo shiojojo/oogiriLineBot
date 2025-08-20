@@ -2,7 +2,7 @@
 //var BOSYU_BUNSYOU = '';　　　　　// 　お題シート
 //var BOSYU_SYASHIN = '';　　　　　//　写真シート
 //　HTTPリクエスト　POST
-var linePost = 'https://api.line.me/v2/bot/message/reply';
+const linePost = 'https://api.line.me/v2/bot/message/reply';
 
 function OdaiMessage() {
   return getRandomFromSheet('お題', 2);
@@ -16,25 +16,25 @@ function OdaisyasinMessage() {
 function ColumLastRowPlusOne(sheet, colum) {
   // 列指定の最終行に一足した値を取得する。
   // 指定の列を配列として取得
-  var columnVal = sheet.getRange(colum).getValues();
+  const columnVal = sheet.getRange(colum).getValues();
   //　空白を除いて、配列の数を取得して、１を加える
-  var lastRowPlusOne = columnVal.filter(String).length + 1;
+  const lastRowPlusOne = columnVal.filter(String).length + 1;
 
   return lastRowPlusOne;
 }
 
 function kaitou(sourceGroupId, sourceUserId, userMessage) {
   // 回答を保存する処理
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('回答');
-  var lastRow = ColumLastRowPlusOne(sheet, 'C:C');
-  var today = new Date();
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('回答');
+  const lastRow = ColumLastRowPlusOne(sheet, 'C:C');
+  const today = new Date();
 
   if (SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId)) {
     //グループで作成したシートが存在するならそのシートに記載する。
-    var groupSheet =
+    const groupSheet =
       SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId);
-    var groupLastRow = ColumLastRowPlusOne(groupSheet, 'C:C');
-    var GenzainoOdai = groupSheet.getRange(2, 6).getValue();
+    const groupLastRow = ColumLastRowPlusOne(groupSheet, 'C:C');
+    const GenzainoOdai = groupSheet.getRange(2, 6).getValue();
 
     //グループシートに情報を入力
     if (
@@ -66,36 +66,36 @@ function doPost(e) {
   //送信するメッセージを作成
 
   // Jsonにパース
-  var json = JSON.parse(e.postData.contents);
+  const json = JSON.parse(e.postData.contents);
   console.log(json);
 
   // 送信されてきた情報を取得
-  var userMessage = json.events[0].message.text;
-  var sourceGroupId = json.events[0].source.groupId;
-  var sourceUserId = json.events[0].source.userId;
+  const userMessage = json.events[0].message.text;
+  const sourceGroupId = json.events[0].source.groupId;
+  const sourceUserId = json.events[0].source.userId;
 
   //var sourceGroupId = 'C86096a86ba1ccf8d7e91fbee7d39c607';
   //console.log(e);
 
   // 返信するためのトークンを取得
-  var replyToken = json.events[0].replyToken;
+  const replyToken = json.events[0].replyToken;
   if (typeof replyToken === 'undefined') {
     return;
   }
 
   // 返信するメッセージを配列で用意
-  var replyMessages;
+  let replyMessages;
   if (userMessage === 'お題') {
     //　お題とメッセージ来た時の処理
 
-    var odai = OdaiMessage();
+    const odai = OdaiMessage();
     setGroupOdaiValue(sourceGroupId, odai);
     replyMessages = [createTextMessage(odai)];
     postToLine(replyToken, replyMessages);
   } else if (userMessage === '写真') {
     //　写真とメッセージ来た時の処理
-    var odaiMessage = '写真でひとこと';
-    var odaiImage = OdaisyasinMessage();
+    const odaiMessage = '写真でひとこと';
+    const odaiImage = OdaisyasinMessage();
     setGroupOdaiValue(sourceGroupId, odaiImage);
     replyMessages = [
       createTextMessage(odaiMessage),

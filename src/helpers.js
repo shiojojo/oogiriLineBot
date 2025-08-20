@@ -2,17 +2,17 @@
 // These are defined in the global scope so Google Apps Script can call them from other files.
 
 function getRandomFromSheet(sheetName, colIndex) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
   if (!sheet) return '';
-  var lastRow = sheet.getLastRow();
+  const lastRow = sheet.getLastRow();
   if (lastRow <= 1) return '';
-  var row = Math.ceil(Math.random() * (lastRow - 1)) + 1; // between 2..lastRow
+  const row = Math.ceil(Math.random() * (lastRow - 1)) + 1; // between 2..lastRow
   return sheet.getRange(row, colIndex).getValue();
 }
 
 function setGroupOdaiValue(sourceGroupId, value) {
   if (SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId)) {
-    var groupSheet =
+    const groupSheet =
       SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sourceGroupId);
     groupSheet.getRange(2, 6).setValue(value);
   }
