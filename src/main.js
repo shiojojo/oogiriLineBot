@@ -115,17 +115,31 @@ function doPost(e) {
 }
 
 function postToLine(replyToken, messages) {
+  // Validate input
+  if (!Array.isArray(messages) || messages.length === 0) return;
+  if (typeof CHANNEL_ACCESS_TOKEN === 'undefined' || !CHANNEL_ACCESS_TOKEN) {
+    Logger.log('postToLine aborted: CHANNEL_ACCESS_TOKEN is not set');
+    return;
+  }
+
   // メッセージをLINEに送信
-  UrlFetchApp.fetch(linePost, {
-    headers: {
-      'Content-Type': 'application/json; charset=UTF-8',
-      Authorization: 'Bearer ' + CHANNEL_ACCESS_TOKEN,
-    },
-    method: 'post',
-    payload: JSON.stringify({
+  try {
+    const payload = JSON.stringify({
       replyToken: replyToken,
       messages: messages,
-    }),
-  });
+    });
+    UrlFetchApp.fetch(linePost, {
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        Authorization: 'Bearer ' + CHANNEL_ACCESS_TOKEN,
+      },
+      method: 'post',
+      payload: payload,
+    });
+  } catch (err) {
+    // Log and swallow to avoid breaking caller
+    Logger.log('postToLine error: ' + (err && err.message ? err.message : err));
+    return;
+  }
   // return ContentService.createTextOutput(JSON.stringify({'content': 'post ok'})).setMimeType(ContentService.MimeType.JSON);
 }
