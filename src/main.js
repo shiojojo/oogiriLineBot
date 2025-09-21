@@ -134,7 +134,8 @@ function kaitou(sourceGroupId, sourceUserId, userMessage, replyToken) {
     try {
       sendReplyToLine(replyToken, [
         createTextMessage(
-          '書き込みに失敗しました。少し待って再送してください。ID: ' + answerId
+          '書き込みに失敗しました。もう一度、同じ回答をしてください。ID: ' +
+            answerId
         ),
       ]);
     } catch (e) {
