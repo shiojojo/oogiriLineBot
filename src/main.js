@@ -66,7 +66,7 @@ function kaitou(sourceGroupId, sourceUserId, userMessage) {
   // グループシート（存在すれば）への追記
   const groupSheet = ss.getSheetByName(sourceGroupId);
   if (groupSheet) {
-    const odai = groupSheet.getRange(2, 6).getValue();
+    const odai = groupSheet.getRange(2, GROUP_META_ODAI_COL).getValue();
     const isImage =
       typeof odai === 'string' &&
       odai.indexOf('https://drive.usercontent.google.com/download') === 0;
@@ -86,7 +86,7 @@ function kaitou(sourceGroupId, sourceUserId, userMessage) {
     groupSheet.setRowHeight(newRow, isImage ? 120 : 21);
     groupSheet
       .getRange(newRow, 4)
-      .setFormula('=VLOOKUP(C' + newRow + ',$F$4:$G$8,2,false)');
+      .setFormula('=VLOOKUP(C' + newRow + ',$H$4:$I$8,2,false)');
   }
 
   // 回答シート: CSV 例より "お題, 回答, 回答者ID, 回答者(名前), (予備), 現在のお題(or Group)" 形式を想定。
@@ -96,7 +96,7 @@ function kaitou(sourceGroupId, sourceUserId, userMessage) {
   if (!groupSheet) {
     // グループシートが無い場合は空欄 (個別/1:1 チャットなど)
   } else {
-    currentOdai = groupSheet.getRange(2, 6).getValue();
+    currentOdai = groupSheet.getRange(2, GROUP_META_ODAI_COL).getValue();
   }
   // 回答シート列: A お題 / B 回答 / C 回答者ID / D 回答者名 / E 時刻 / F グループID / G 回答ID
   const answerRowValues = [

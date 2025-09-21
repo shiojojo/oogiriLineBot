@@ -10,11 +10,13 @@ function getRandomFromSheet(sheetName, colIndex) {
   return sheet.getRange(row, colIndex).getValue();
 }
 
+// Column shift: 現在のお題 を H 列(8列目) に配置 (以前は F 列(6))
+var GROUP_META_ODAI_COL = 8;
 function setGroupOdaiValue(sourceGroupId, value) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const groupSheet = ss.getSheetByName(sourceGroupId);
   if (groupSheet) {
-    groupSheet.getRange(2, 6).setValue(value);
+    groupSheet.getRange(2, GROUP_META_ODAI_COL).setValue(value);
   }
 }
 
