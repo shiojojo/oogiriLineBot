@@ -30,6 +30,23 @@ function createImageMessage(url) {
   };
 }
 
+// Execute a critical section with a document-level lock to avoid concurrent
+// writes clobbering the same spreadsheet rows. waitLock up to 5s; if it fails
+// it will throw and upstream can decide how to handle (LINE will usually retry).
+function withDocumentLock(fn) {
+  const lock = LockService.getDocumentLock();
+  // Wait up to 5 seconds for other executions (cron / replies) to finish.
+  lock.waitLock(5000);
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// Export to global scope for other files.
+this.withDocumentLock = withDocumentLock;
+
 // Send a push message to a single user/group using the LINE Push API.
 // - to: string (userId or groupId)
 // - messages: array of message objects (same shape as reply messages)
