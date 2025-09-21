@@ -19,7 +19,7 @@ function ColumLastRowPlusOne(sheet) {
   return sheet.getLastRow() + 1;
 }
 
-function kaitou(sourceGroupId, sourceUserId, userMessage) {
+function kaitou(sourceGroupId, sourceUserId, userMessage, replyToken) {
   // ロックによる待ち時間が LINE Webhook タイムアウトを誘発するケースがあるため
   // appendRow の原子的追加性を利用してロックレス運用へ変更。
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -65,28 +65,33 @@ function kaitou(sourceGroupId, sourceUserId, userMessage) {
 
   // グループシート（存在すれば）への追記
   const groupSheet = ss.getSheetByName(sourceGroupId);
+  let groupOk = true;
   if (groupSheet) {
-    const odai = groupSheet.getRange(2, GROUP_META_ODAI_COL).getValue();
-    const isImage =
-      typeof odai === 'string' &&
-      odai.indexOf('https://drive.usercontent.google.com/download') === 0;
+    try {
+      const odai = groupSheet.getRange(2, GROUP_META_ODAI_COL).getValue();
+      const isImage =
+        typeof odai === 'string' &&
+        odai.indexOf('https://drive.usercontent.google.com/download') === 0;
 
-    // 1回の appendRow で基本列を書き込む（D列の VLOOKUP は行番号確定後に設定）
-    const firstCell = isImage ? '=IMAGE("' + odai + '")' : odai;
-    groupSheet.appendRow([
-      firstCell,
-      userMessage,
-      sourceUserId,
-      '',
-      now,
-      answerId,
-    ]);
-    const newRow = groupSheet.getLastRow();
-    // 行高さ調整 & VLOOKUP 設定
-    groupSheet.setRowHeight(newRow, isImage ? 120 : 21);
-    groupSheet
-      .getRange(newRow, 4)
-      .setFormula('=VLOOKUP(C' + newRow + ',$H$4:$I$8,2,false)');
+      // 1回の appendRow で基本列を書き込む（D列の VLOOKUP は行番号確定後に設定）
+      const firstCell = isImage ? '=IMAGE("' + odai + '")' : odai;
+      groupSheet.appendRow([
+        firstCell,
+        userMessage,
+        sourceUserId,
+        '',
+        now,
+        answerId,
+      ]);
+      const newRow = groupSheet.getLastRow();
+      // 行高さ調整 & VLOOKUP 設定
+      groupSheet.setRowHeight(newRow, isImage ? 120 : 21);
+      groupSheet
+        .getRange(newRow, 4)
+        .setFormula('=VLOOKUP(C' + newRow + ',$H$4:$I$8,2,false)');
+    } catch (e) {
+      groupOk = false;
+    }
   }
 
   // 回答シート: CSV 例より "お題, 回答, 回答者ID, 回答者(名前), (予備), 現在のお題(or Group)" 形式を想定。
@@ -122,6 +127,19 @@ function kaitou(sourceGroupId, sourceUserId, userMessage) {
         answerId,
       }),
     ]);
+  }
+
+  // どちらか失敗時にユーザーへ通知（回答が消えたと誤解されないよう）
+  if ((!ok || !groupOk) && replyToken) {
+    try {
+      sendReplyToLine(replyToken, [
+        createTextMessage(
+          '書き込みに失敗しました。少し待って再送してください。ID: ' + answerId
+        ),
+      ]);
+    } catch (e) {
+      // 通知失敗は黙殺（これ以上リトライしない）
+    }
   }
 }
 
@@ -167,7 +185,7 @@ function doPost(e) {
     }
 
     // 通常回答
-    kaitou(sourceGroupId, sourceUserId, userMessage);
+    kaitou(sourceGroupId, sourceUserId, userMessage, replyToken);
   }
 }
 
