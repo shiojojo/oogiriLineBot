@@ -4,6 +4,14 @@ function OdaiImage() {
 }
 
 function linePushImage() {
+  // Sync latest answers to tsukkomi before pushing
+  try {
+    syncTextTopicAnswersToTsukkomi();
+  } catch (error) {
+    Logger.log('Sync failed before push: ' + error.message);
+    // Continue with push even if sync fails
+  }
+
   const odaiImage = OdaiImage();
 
   // Update group sheet if it exists
