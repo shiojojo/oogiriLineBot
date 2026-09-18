@@ -69,9 +69,9 @@ function kaitou(sourceGroupId, sourceUserId, userMessage, replyToken) {
   if (groupSheet) {
     try {
       const odai = groupSheet.getRange(2, GROUP_META_ODAI_COL).getValue();
+      // Image odai: any http(s) URL (Supabase Storage public URL, legacy Drive, etc.)
       const isImage =
-        typeof odai === 'string' &&
-        odai.indexOf('https://drive.usercontent.google.com/download') === 0;
+        typeof odai === 'string' && /^https?:\/\//i.test(odai.trim());
 
       // 1回の appendRow で基本列を書き込む（D列の VLOOKUP は行番号確定後に設定）
       const firstCell = isImage ? '=IMAGE("' + odai + '")' : odai;
