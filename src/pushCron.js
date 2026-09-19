@@ -12,14 +12,12 @@ function linePush() {
   }
 
   const odai = OdaiMessageCron();
+  const lineUserId = getScriptConfig_('LINE_USERID');
 
-  if (typeof LINE_USERID !== 'undefined' && LINE_USERID) {
-    // update group sheet if exists
-    setGroupOdaiValue(LINE_USERID, odai);
-
-    // push two messages: label and the actual odai
+  if (lineUserId) {
+    setGroupOdaiValue(lineUserId, odai);
     const messages = [createTextMessage('お題'), createTextMessage(odai)];
-    sendPushToLine(LINE_USERID, messages);
+    sendPushToLine(lineUserId, messages);
   } else {
     Logger.log('linePush aborted: LINE_USERID is not set');
   }

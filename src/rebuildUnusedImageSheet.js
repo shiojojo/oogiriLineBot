@@ -12,24 +12,14 @@
  */
 
 function resolveTsukkomiApiKey() {
-  const props = PropertiesService.getScriptProperties();
-  return (
-    (typeof TSUKKOMI_API_KEY !== 'undefined' && TSUKKOMI_API_KEY) ||
-    props.getProperty('TSUKKOMI_API_KEY')
-  );
+  return getScriptConfig_('TSUKKOMI_API_KEY');
 }
 
 function resolveUnusedImageUrlsEndpoint() {
-  const props = PropertiesService.getScriptProperties();
-  const explicit =
-    (typeof TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT !== 'undefined' &&
-      TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT) ||
-    props.getProperty('TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT');
-  if (explicit) return String(explicit).trim();
+  const explicit = getScriptConfig_('TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT');
+  if (explicit) return explicit;
 
-  const ingest =
-    (typeof TSUKKOMI_API_ENDPOINT !== 'undefined' && TSUKKOMI_API_ENDPOINT) ||
-    props.getProperty('TSUKKOMI_API_ENDPOINT');
+  const ingest = getScriptConfig_('TSUKKOMI_API_ENDPOINT');
   if (!ingest) return null;
   return String(ingest).replace(
     /\/api\/line-ingest\/?$/i,

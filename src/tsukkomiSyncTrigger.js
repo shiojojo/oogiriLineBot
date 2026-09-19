@@ -6,17 +6,10 @@
 
 function getTsukkomiSyncConfig() {
   const props = PropertiesService.getScriptProperties();
-  const endpoint =
-    (typeof TSUKKOMI_API_ENDPOINT !== 'undefined' && TSUKKOMI_API_ENDPOINT) ||
-    props.getProperty('TSUKKOMI_API_ENDPOINT');
-  const apiKey =
-    (typeof TSUKKOMI_API_KEY !== 'undefined' && TSUKKOMI_API_KEY) ||
-    props.getProperty('TSUKKOMI_API_KEY');
+  const endpoint = getScriptConfig_('TSUKKOMI_API_ENDPOINT');
+  const apiKey = getScriptConfig_('TSUKKOMI_API_KEY');
   const groupSheetName =
-    (typeof TSUKKOMI_GROUP_SHEET !== 'undefined' && TSUKKOMI_GROUP_SHEET) ||
-    props.getProperty('TSUKKOMI_GROUP_SHEET') ||
-    (typeof LINE_USERID !== 'undefined' && LINE_USERID) ||
-    props.getProperty('LINE_USERID');
+    getScriptConfig_('TSUKKOMI_GROUP_SHEET') || getScriptConfig_('LINE_USERID');
   return { endpoint, apiKey, groupSheetName, props };
 }
 

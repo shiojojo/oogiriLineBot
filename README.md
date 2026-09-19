@@ -6,8 +6,12 @@ LINE 大喜利ボット。スプレッドシートをカタログ／回答台帳
 
 ## Script Properties（必須）
 
+Apps Script → プロジェクトの設定 → **スクリプト プロパティ**。
+
 | プロパティ | 用途 |
 |------------|------|
+| `CHANNEL_ACCESS_TOKEN` | LINE チャネルアクセストークン（push / reply 共用） |
+| `LINE_USERID` | push 先のグループ ID（例: `C…`） |
 | `TSUKKOMI_API_ENDPOINT` | `https://<host>/api/line-ingest` |
 | `TSUKKOMI_API_KEY` | tsukkomi の `LINE_SYNC_API_KEY` と同じ |
 
@@ -16,9 +20,11 @@ LINE 大喜利ボット。スプレッドシートをカタログ／回答台帳
 | プロパティ | 用途 |
 |------------|------|
 | `TSUKKOMI_GROUP_SHEET` | 回答シート名（省略時は `LINE_USERID`） |
-| `TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT` | unused API のフル URL（省略時は ingest URL から `/api/unused-image-urls` を導出） |
+| `TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT` | unused API のフル URL（省略時は ingest URL から導出） |
+| `LINE_ENDPOINT` | LINE Push API URL（省略時は公式デフォルト） |
+| `BOSYU_BUNSYOU` / `BOSYU_SYASHIN` | 「募集」返信の Forms URL（省略時は `secret.js` の定数） |
 
-コード内の `LINE_USERID` など既存定数も従来どおり必要。
+読み取りは `getScriptConfig_`（Properties 優先 → 同名グローバルのフォールバック）。
 
 ## トリガーに設定するもの（これだけ）
 

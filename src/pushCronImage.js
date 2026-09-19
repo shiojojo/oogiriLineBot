@@ -13,18 +13,16 @@ function linePushImage() {
   }
 
   const odaiImage = OdaiImage();
+  const lineUserId = getScriptConfig_('LINE_USERID');
 
-  // Update group sheet if it exists
-  if (typeof LINE_USERID !== 'undefined' && LINE_USERID) {
-    setGroupOdaiValue(LINE_USERID, odaiImage);
-
-    // Use shared helper to push messages
+  if (lineUserId) {
+    setGroupOdaiValue(lineUserId, odaiImage);
     const messages = [
       createTextMessage('写真でひとこと'),
       createTextMessage(odaiImage),
       createImageMessage(odaiImage),
     ];
-    sendPushToLine(LINE_USERID, messages);
+    sendPushToLine(lineUserId, messages);
   } else {
     Logger.log('linePushImage aborted: LINE_USERID is not set');
   }

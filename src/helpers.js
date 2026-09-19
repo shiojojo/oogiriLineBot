@@ -1,6 +1,64 @@
 // Helper functions extracted from main.js
 // These are defined in the global scope so Google Apps Script can call them from other files.
 
+/**
+ * Script Properties 優先。未設定時のみ同名グローバル（secret.js の残り）を見る。
+ * @param {string} key
+ * @param {string} [defaultValue]
+ * @returns {string}
+ */
+function getScriptConfig_(key, defaultValue) {
+  const fromProps = PropertiesService.getScriptProperties().getProperty(key);
+  if (fromProps != null && String(fromProps).trim() !== '') {
+    return String(fromProps).trim();
+  }
+
+  let fromGlobal = '';
+  switch (key) {
+    case 'CHANNEL_ACCESS_TOKEN':
+      fromGlobal =
+        typeof CHANNEL_ACCESS_TOKEN !== 'undefined' ? CHANNEL_ACCESS_TOKEN : '';
+      break;
+    case 'LINE_USERID':
+      fromGlobal = typeof LINE_USERID !== 'undefined' ? LINE_USERID : '';
+      break;
+    case 'LINE_ENDPOINT':
+      fromGlobal = typeof LINE_ENDPOINT !== 'undefined' ? LINE_ENDPOINT : '';
+      break;
+    case 'TSUKKOMI_API_KEY':
+      fromGlobal =
+        typeof TSUKKOMI_API_KEY !== 'undefined' ? TSUKKOMI_API_KEY : '';
+      break;
+    case 'TSUKKOMI_API_ENDPOINT':
+      fromGlobal =
+        typeof TSUKKOMI_API_ENDPOINT !== 'undefined' ? TSUKKOMI_API_ENDPOINT : '';
+      break;
+    case 'TSUKKOMI_GROUP_SHEET':
+      fromGlobal =
+        typeof TSUKKOMI_GROUP_SHEET !== 'undefined' ? TSUKKOMI_GROUP_SHEET : '';
+      break;
+    case 'TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT':
+      fromGlobal =
+        typeof TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT !== 'undefined'
+          ? TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT
+          : '';
+      break;
+    case 'BOSYU_BUNSYOU':
+      fromGlobal = typeof BOSYU_BUNSYOU !== 'undefined' ? BOSYU_BUNSYOU : '';
+      break;
+    case 'BOSYU_SYASHIN':
+      fromGlobal = typeof BOSYU_SYASHIN !== 'undefined' ? BOSYU_SYASHIN : '';
+      break;
+    default:
+      fromGlobal = '';
+  }
+
+  if (fromGlobal != null && String(fromGlobal).trim() !== '') {
+    return String(fromGlobal).trim();
+  }
+  return defaultValue != null ? String(defaultValue) : '';
+}
+
 function getRandomFromSheet(sheetName, colIndex) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
   if (!sheet) return '';
@@ -48,14 +106,16 @@ function withDocumentLock(fn) {
 
 // Export to global scope for other files.
 this.withDocumentLock = withDocumentLock;
+this.getScriptConfig_ = getScriptConfig_;
 
 // Send a push message to a single user/group using the LINE Push API.
 // - to: string (userId or groupId)
 // - messages: array of message objects (same shape as reply messages)
 function sendPushToLine(to, messages) {
   if (!Array.isArray(messages) || messages.length === 0) return;
-  if (typeof LINE_TOKEN === 'undefined' || !LINE_TOKEN) {
-    Logger.log('sendPushToLine aborted: LINE_TOKEN is not set');
+  const token = getScriptConfig_('CHANNEL_ACCESS_TOKEN');
+  if (!token) {
+    Logger.log('sendPushToLine aborted: CHANNEL_ACCESS_TOKEN is not set');
     return;
   }
 
@@ -64,22 +124,22 @@ function sendPushToLine(to, messages) {
     messages: messages,
   };
 
+  const endpoint = getScriptConfig_(
+    'LINE_ENDPOINT',
+    'https://api.line.me/v2/bot/message/push',
+  );
+
   const options = {
     method: 'post',
     contentType: 'application/json',
     headers: {
-      Authorization: 'Bearer ' + LINE_TOKEN,
+      Authorization: 'Bearer ' + token,
     },
     payload: JSON.stringify(payload),
   };
 
   try {
-    UrlFetchApp.fetch(
-      typeof LINE_ENDPOINT !== 'undefined' && LINE_ENDPOINT
-        ? LINE_ENDPOINT
-        : 'https://api.line.me/v2/bot/message/push',
-      options
-    );
+    UrlFetchApp.fetch(endpoint, options);
   } catch (err) {
     Logger.log(
       'sendPushToLine error: ' + (err && err.message ? err.message : err)
@@ -92,7 +152,8 @@ function sendPushToLine(to, messages) {
 // - messages: array of message objects
 function sendReplyToLine(replyToken, messages) {
   if (!Array.isArray(messages) || messages.length === 0) return;
-  if (typeof CHANNEL_ACCESS_TOKEN === 'undefined' || !CHANNEL_ACCESS_TOKEN) {
+  const token = getScriptConfig_('CHANNEL_ACCESS_TOKEN');
+  if (!token) {
     Logger.log('sendReplyToLine aborted: CHANNEL_ACCESS_TOKEN is not set');
     return;
   }
@@ -107,7 +168,7 @@ function sendReplyToLine(replyToken, messages) {
     UrlFetchApp.fetch(endpoint, {
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
-        Authorization: 'Bearer ' + CHANNEL_ACCESS_TOKEN,
+        Authorization: 'Bearer ' + token,
       },
       method: 'post',
       payload: payload,

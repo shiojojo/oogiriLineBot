@@ -1,7 +1,5 @@
-//var CHANNEL_ACCESS_TOKEN = '';  // LINE Bot のアクセストークン
-//var BOSYU_BUNSYOU = '';　　　　　// 　お題シート
-//var BOSYU_SYASHIN = '';　　　　　//　写真シート
 // HTTP: reply/send helpers are in src/helpers.js
+// Secrets (CHANNEL_ACCESS_TOKEN など) は src/secret/secret.js
 
 function OdaiMessage() {
   return getRandomFromSheet('お題', 2);
@@ -171,8 +169,8 @@ function doPost(e) {
     }
     if (userMessage === '募集') {
       sendReplyToLine(replyToken, [
-        createTextMessage(BOSYU_BUNSYOU),
-        createTextMessage(BOSYU_SYASHIN),
+        createTextMessage(getScriptConfig_('BOSYU_BUNSYOU')),
+        createTextMessage(getScriptConfig_('BOSYU_SYASHIN')),
       ]);
       continue;
     }
