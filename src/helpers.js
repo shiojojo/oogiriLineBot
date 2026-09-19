@@ -108,6 +108,55 @@ function withDocumentLock(fn) {
 this.withDocumentLock = withDocumentLock;
 this.getScriptConfig_ = getScriptConfig_;
 
+/**
+ * Apps Script エディタから手動実行: 必須 Script Properties が読めているか確認。
+ * 秘密の全文は出さない（長さと先頭数文字のみ）。
+ */
+function testScriptConfig() {
+  const required = [
+    'CHANNEL_ACCESS_TOKEN',
+    'LINE_USERID',
+    'TSUKKOMI_API_KEY',
+    'TSUKKOMI_API_ENDPOINT',
+  ];
+  const optional = [
+    'TSUKKOMI_GROUP_SHEET',
+    'TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT',
+    'LINE_ENDPOINT',
+    'BOSYU_BUNSYOU',
+    'BOSYU_SYASHIN',
+  ];
+
+  function report(key, needed) {
+    const v = getScriptConfig_(key);
+    if (!v) {
+      Logger.log((needed ? '[REQUIRED MISSING] ' : '[optional empty] ') + key);
+      return !needed;
+    }
+    Logger.log(
+      '[ok] ' +
+        key +
+        ' len=' +
+        v.length +
+        ' head=' +
+        v.substring(0, Math.min(6, v.length)),
+    );
+    return true;
+  }
+
+  let ok = true;
+  required.forEach(function (k) {
+    if (!report(k, true)) ok = false;
+  });
+  optional.forEach(function (k) {
+    report(k, false);
+  });
+  Logger.log(ok ? 'testScriptConfig: PASS' : 'testScriptConfig: FAIL');
+  return ok;
+}
+
+this.testScriptConfig = testScriptConfig;
+
 // Send a push message to a single user/group using the LINE Push API.
 // - to: string (userId or groupId)
 // - messages: array of message objects (same shape as reply messages)
