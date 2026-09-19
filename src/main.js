@@ -10,14 +10,6 @@ function OdaiMessage() {
 function OdaisyasinMessage() {
   return getRandomFromSheet('画像', 2);
 }
-// Helper functions moved to src/helpers.js
-
-function ColumLastRowPlusOne(sheet) {
-  // シート全体の最終行 + 1 を返す（ヘッダ 1 行想定）。
-  // getLastRow は空行が途中にあっても一番下の使用行を返すため
-  // 途中の空行を再利用しないポリシーであれば衝突リスクを減らせる。
-  return sheet.getLastRow() + 1;
-}
 
 function kaitou(sourceGroupId, sourceUserId, userMessage, replyToken) {
   // ロックによる待ち時間が LINE Webhook タイムアウトを誘発するケースがあるため
@@ -69,7 +61,7 @@ function kaitou(sourceGroupId, sourceUserId, userMessage, replyToken) {
   if (groupSheet) {
     try {
       const odai = groupSheet.getRange(2, GROUP_META_ODAI_COL).getValue();
-      // Image odai: any http(s) URL (Supabase Storage public URL, legacy Drive, etc.)
+      // Image odai: any http(s) URL (typically Supabase Storage public URL)
       const isImage =
         typeof odai === 'string' && /^https?:\/\//i.test(odai.trim());
 

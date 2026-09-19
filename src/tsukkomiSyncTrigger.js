@@ -192,7 +192,7 @@ function buildLatestTopicPayload(config, lastSyncedAnswerId) {
               title: topicTitle,
               createdAt: topicCreatedAt,
               sourceLabel,
-              sourceImage: latestTopicKey,
+              image: latestTopicKey,
               altText: '写真でひとこと',
             }
           : {

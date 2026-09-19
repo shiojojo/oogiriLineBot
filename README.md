@@ -39,20 +39,15 @@ Web アプリとして公開している場合のエントリは従来どおり 
 |--------|----------|
 | `rebuildUnusedImageSheet` | 月次の前に今すぐシートを作り直すとき（`cronRebuild…` と同じ本体） |
 | `syncTextTopicAnswersToTsukkomi` | 同期だけ試すとき |
-| `appendImagePublicUrl` | `/api/upload-image` で得た `publicUrl` を「画像」に1行足すとき（エディタから呼ぶ／一時スクリプト） |
+| `appendImagePublicUrl` | `pnpm upload:images` で得た `publicUrl` を「画像」に1行足すとき（エディタから呼ぶ／一時スクリプト） |
 
-## 設定しない・使わないもの
+## トリガーに載せないもの（内部）
 
-| 関数名 | 理由 |
-|--------|------|
-| `getFileListInFolder` | **非推奨**。Drive フォルダを「画像」に書く旧処理。実行しない |
-| `OdaiMessage` / `OdaisyasinMessage` / `OdaiImage` / `OdaiMessageCron` | push／`doPost` から呼ばれる内部ヘルパー。トリガーに載せない |
-| `fetchUnusedImageUrlsFromApi` | rebuild 用の内部。トリガーに載せない |
-| `kaitou` / `sendPushToLine` など | 内部ヘルパー |
+`OdaiMessage` / `OdaisyasinMessage` / `OdaiImage` / `OdaiMessageCron`、`fetchUnusedImageUrlsFromApi`、`kaitou` / `sendPushToLine` など。push／`doPost`／rebuild から呼ばれるだけ。
 
 ## 画像の流れ（現状）
 
-1. 画像を tsukkomi `POST /api/upload-image` で Storage に上げる（または既に `line-sync/` にあるものを使う）
+1. 画像を `local-images/inbox/` に置き、tsukkomi-v2 で `pnpm upload:images`（Storage へ。成功後は `done/<hash>.ext` に移動）
 2. 公開 URL を「画像」B列に載せる（手動なら `appendImagePublicUrl`、定期なら月次 rebuild）
 3. 日次の「写真」／`linePushImage` はシートからランダム pick のみ（API は叩かない）
 4. 回答が付いたお題は sync で topics になり、次の月次 rebuild でシートから落ちる
