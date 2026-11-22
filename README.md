@@ -51,12 +51,12 @@ Web アプリとして公開している場合のエントリは従来どおり 
 
 ## トリガーに載せないもの（内部）
 
-`OdaiMessage` / `OdaisyasinMessage` / `OdaiImage` / `OdaiMessageCron`、`fetchUnusedImageUrlsFromApi`、`kaitou` / `sendPushToLine` など。push／`doPost`／rebuild から呼ばれるだけ。
+`OdaiMessage` / `OdaisyasinMessage` / `OdaiImage` / `OdaiMessageCron`、`fetchUnusedImageUrlsFromSupabase`、`kaitou` / `sendPushToLine` など。push／`doPost`／rebuild から呼ばれるだけ。
 
 ## Supabase直接接続の設定
 
 1. Apps Scriptの「プロジェクトの設定」→「スクリプト プロパティ」に`SUPABASE_SECRET_KEY`を登録する。
-2. 新経路だけで動くことを明示的に確かめる場合は、旧キーを値を変えずに次の名前へ一時変更する：`TSUKKOMI_API_ENDPOINT_OLD_20261122`、`TSUKKOMI_API_KEY_OLD_20261122`、`TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT_OLD_20261122`。現在の直接接続コードは元の3プロパティを参照していない。
+2. `SUPABASE_URL` が `.env.local` の `VITE_SUPABASE_URL` と同じSupabase projectを指していることを確認する。
 3. `SUPABASE_SECRET_KEY`はコード、シート、ログに書かない。`testScriptConfig`は値の内容を出力せず、設定済みかだけを確認する。
 4. 必要に応じて`STORAGE_BUCKET`、`STORAGE_FOLDER`、`STORAGE_EXTRA_FOLDERS`を設定する。
 5. `testScriptConfig`を実行し、必須設定を確認する。
@@ -65,7 +65,7 @@ Web アプリとして公開している場合のエントリは従来どおり 
 8. `testLineSyncPreflight`を実行する。既存の画像URL・トピック・プロフィール検索と入力検証を確認し、DBへは書き込まない。
 9. LINE同期はテスト用お題・回答で`syncTextTopicAnswersToTsukkomi`を実行し、DBへの書き込みと再実行時の重複防止を確認する。
 
-旧プロパティを日付付きに変更するのは確認を明確にするための一時措置。問題が起きて旧コードへ戻す場合は、プロパティ名を元に戻し、旧GASコードも再デプロイする。新接続の検証完了後、旧プロパティは削除できる。`clasp push`ではScript Propertiesは変更されない。
+VercelのLINE APIは不要になり、tsukkomi-v2から削除済み。旧Script Properties（`TSUKKOMI_API_ENDPOINT`、`TSUKKOMI_API_KEY`、`TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT`と日付付きの退避名）が残っていれば、現在のGASコードでは参照されないため削除できる。`TSUKKOMI_LAST_SYNC_ANSWER_ID`は同期位置として現在も使用するので削除しない。`clasp push`ではScript Propertiesは変更されない。
 
 GASはSupabaseのREST APIとStorage APIを直接呼び出す。LINE同期の管理キーは強い権限を持つため、Apps Scriptの編集権限も自分だけに限定し、漏洩時はSupabaseでキーをローテーションする。
 
@@ -76,4 +76,4 @@ GASはSupabaseのREST APIとStorage APIを直接呼び出す。LINE同期の管�
 3. 日次の「写真」／`linePushImage` はシートからランダム pick のみ（API は叩かない）
 4. 回答が付いたお題はsyncでtopicsになり、次の月次rebuildがSupabaseから直接取得してシートから落とす
 
-旧Vercel APIは切り戻し期間が終わるまで残す。直接接続を検証し終える前に、Vercel側APIを削除しない。
+LINE botの同期と画像一覧はGASからSupabaseへ直接接続する。tsukkomi-v2のVercel APIルートは削除済み。
