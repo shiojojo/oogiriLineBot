@@ -56,12 +56,15 @@ Web アプリとして公開している場合のエントリは従来どおり 
 ## Supabase直接接続の設定
 
 1. Apps Scriptの「プロジェクトの設定」→「スクリプト プロパティ」に`SUPABASE_SECRET_KEY`を登録する。
-2. `SUPABASE_SECRET_KEY`はコード、シート、ログに書かない。`testScriptConfig`は値の内容を出力せず、設定済みかだけを確認する。
-3. 必要に応じて`STORAGE_BUCKET`、`STORAGE_FOLDER`、`STORAGE_EXTRA_FOLDERS`を設定する。
-4. `testScriptConfig`を実行し、必須設定を確認する。
-5. `testSupabaseDirectConnection`を実行し、画像URLをログに出さずに読み取り接続と件数を確認する。
-6. `rebuildUnusedImageSheet`を手動実行し、画像シートの結果を確認する。
-7. LINE同期はテスト用お題・回答で`syncTextTopicAnswersToTsukkomi`を実行し、DBへの書き込みと再実行時の重複防止を確認する。
+2. 新経路だけで動くことを明示的に確かめる場合は、旧キーを値を変えずに次の名前へ一時変更する：`TSUKKOMI_API_ENDPOINT_OLD_20261122`、`TSUKKOMI_API_KEY_OLD_20261122`、`TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT_OLD_20261122`。現在の直接接続コードは元の3プロパティを参照していない。
+3. `SUPABASE_SECRET_KEY`はコード、シート、ログに書かない。`testScriptConfig`は値の内容を出力せず、設定済みかだけを確認する。
+4. 必要に応じて`STORAGE_BUCKET`、`STORAGE_FOLDER`、`STORAGE_EXTRA_FOLDERS`を設定する。
+5. `testScriptConfig`を実行し、必須設定を確認する。
+6. `testSupabaseDirectConnection`を実行し、画像URLをログに出さずに読み取り接続と件数を確認する。
+7. `rebuildUnusedImageSheet`を手動実行し、画像シートの結果を確認する。
+8. LINE同期はテスト用お題・回答で`syncTextTopicAnswersToTsukkomi`を実行し、DBへの書き込みと再実行時の重複防止を確認する。
+
+旧プロパティを日付付きに変更するのは確認を明確にするための一時措置。問題が起きて旧コードへ戻す場合は、プロパティ名を元に戻し、旧GASコードも再デプロイする。新接続の検証完了後、旧プロパティは削除できる。`clasp push`ではScript Propertiesは変更されない。
 
 GASはSupabaseのREST APIとStorage APIを直接呼び出す。LINE同期の管理キーは強い権限を持つため、Apps Scriptの編集権限も自分だけに限定し、漏洩時はSupabaseでキーをローテーションする。
 
