@@ -1,16 +1,14 @@
 /**
  * cronSyncTextTopicsToTsukkomi
  * Google Apps Script time-driven trigger entrypoint for syncing the latest topic answers
- * (text or image) to the tsukkomi v2 ingestion API.
+ * (text or image) directly to Supabase.
  */
 
 function getTsukkomiSyncConfig() {
   const props = PropertiesService.getScriptProperties();
-  const endpoint = getScriptConfig_('TSUKKOMI_API_ENDPOINT');
-  const apiKey = getScriptConfig_('TSUKKOMI_API_KEY');
   const groupSheetName =
     getScriptConfig_('TSUKKOMI_GROUP_SHEET') || getScriptConfig_('LINE_USERID');
-  return { endpoint, apiKey, groupSheetName, props };
+  return { groupSheetName, props };
 }
 
 function toIsoString(value) {
@@ -209,23 +207,13 @@ function syncTextTopicAnswersToTsukkomi() {
     Logger.log('=== syncTextTopicAnswersToTsukkomi START ===');
 
     const config = getTsukkomiSyncConfig();
-    const { endpoint, apiKey, groupSheetName, props } = config;
+    const { groupSheetName, props } = config;
 
     Logger.log(
-      'Config loaded - endpoint: ' +
-        !!endpoint +
-        ', apiKey: ' +
-        !!apiKey +
+      'Config loaded - connection: Supabase direct' +
         ', groupSheetName: ' +
         groupSheetName
     );
-
-    if (!endpoint || !apiKey) {
-      Logger.log(
-        'syncTextTopicAnswersToTsukkomi aborted: missing endpoint or API key'
-      );
-      return;
-    }
 
     if (!groupSheetName) {
       Logger.log(
@@ -252,38 +240,16 @@ function syncTextTopicAnswersToTsukkomi() {
         result.newestAnswerId
     );
 
-    const options = {
-      method: 'post',
-      contentType: 'application/json',
-      headers: {
-        'X-API-KEY': apiKey,
-      },
-      payload: JSON.stringify(result.payload),
-      muteHttpExceptions: true,
-    };
-
-    Logger.log('Sending request to: ' + endpoint);
-    const response = UrlFetchApp.fetch(endpoint, options);
-    const status = response.getResponseCode();
-    const body = response.getContentText();
-    Logger.log('tsukkomi ingest status ' + status + ' body ' + body);
-
-    if (status >= 200 && status < 300) {
-      if (result.newestAnswerId) {
-        props.setProperty(
-          'TSUKKOMI_LAST_SYNC_ANSWER_ID',
-          result.newestAnswerId
-        );
-        Logger.log('Updated last synced ID to: ' + result.newestAnswerId);
-      }
-      Logger.log('=== syncTextTopicAnswersToTsukkomi SUCCESS ===');
-    } else {
-      Logger.log(
-        '=== syncTextTopicAnswersToTsukkomi FAILED with status ' +
-          status +
-          ' ==='
+    const ingestResult = ingestLineAnswersDirect(result.payload);
+    Logger.log('Supabase ingest result: ' + JSON.stringify(ingestResult));
+    if (result.newestAnswerId) {
+      props.setProperty(
+        'TSUKKOMI_LAST_SYNC_ANSWER_ID',
+        result.newestAnswerId
       );
+      Logger.log('Updated last synced ID to: ' + result.newestAnswerId);
     }
+    Logger.log('=== syncTextTopicAnswersToTsukkomi SUCCESS ===');
   } catch (error) {
     Logger.log('=== syncTextTopicAnswersToTsukkomi ERROR ===');
     Logger.log('Error type: ' + typeof error);

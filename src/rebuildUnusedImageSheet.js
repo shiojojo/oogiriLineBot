@@ -1,76 +1,31 @@
 /**
  * Monthly rebuild of spreadsheet「画像」with unanswered Storage URLs only.
- * Diff (Storage − answered topics) runs on tsukkomi; GAS only writes the result.
+ * GAS reads Storage and topics directly from Supabase, then writes the result.
  *
  * Schedule: time-driven trigger on cronRebuildUnusedImageSheet (e.g. monthly).
  * Daily 「写真」 / image cron keep using getRandomFromSheet('画像', 2) — no API.
  *
  * Config:
- *   TSUKKOMI_API_ENDPOINT — https://host/api/line-ingest (path derived)
- *   TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT — optional full override
- *   TSUKKOMI_API_KEY
+ *   SUPABASE_SECRET_KEY — stored in Script Properties
  */
-
-function resolveTsukkomiApiKey() {
-  return getScriptConfig_('TSUKKOMI_API_KEY');
-}
-
-function resolveUnusedImageUrlsEndpoint() {
-  const explicit = getScriptConfig_('TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT');
-  if (explicit) return explicit;
-
-  const ingest = getScriptConfig_('TSUKKOMI_API_ENDPOINT');
-  if (!ingest) return null;
-  return String(ingest).replace(
-    /\/api\/line-ingest\/?$/i,
-    '/api/unused-image-urls',
-  );
-}
 
 /**
  * @returns {{ ok: boolean, urls: string[], meta?: object, error?: string }}
  */
-function fetchUnusedImageUrlsFromApi() {
-  const endpoint = resolveUnusedImageUrlsEndpoint();
-  const apiKey = resolveTsukkomiApiKey();
-  if (!endpoint || !apiKey) {
-    return {
-      ok: false,
-      urls: [],
-      error: 'missing TSUKKOMI_API_ENDPOINT or TSUKKOMI_API_KEY',
-    };
-  }
-
+function fetchUnusedImageUrlsFromSupabase() {
   try {
-    const response = UrlFetchApp.fetch(endpoint, {
-      method: 'get',
-      headers: { 'X-API-KEY': apiKey },
-      muteHttpExceptions: true,
-    });
-    const status = response.getResponseCode();
-    const body = response.getContentText();
-    if (status < 200 || status >= 300) {
-      return { ok: false, urls: [], error: 'HTTP ' + status + ': ' + body };
-    }
-    const json = JSON.parse(body);
-    if (!json || !json.ok || !Array.isArray(json.urls)) {
-      return {
-        ok: false,
-        urls: [],
-        error: (json && json.error) || 'invalid response',
-      };
-    }
+    const result = listUnusedImageUrlsDirect_();
     return {
       ok: true,
-      urls: json.urls.map(String),
+      urls: result.urls.map(String),
       meta: {
-        storageCount: json.storageCount,
-        storageUniqueKeyCount: json.storageUniqueKeyCount,
-        usedUrlCount: json.usedUrlCount != null ? json.usedUrlCount : json.answeredUrlCount,
-        usedKeyCount: json.usedKeyCount,
-        usedTopicCount: json.usedTopicCount != null ? json.usedTopicCount : json.answeredTopicCount,
-        unusedCount: json.unusedCount,
-        folders: json.folders,
+        storageCount: result.storageCount,
+        storageUniqueKeyCount: result.storageUniqueKeyCount,
+        usedUrlCount: result.usedUrlCount,
+        usedKeyCount: result.usedKeyCount,
+        usedTopicCount: result.usedTopicCount,
+        unusedCount: result.unusedCount,
+        folders: result.folders,
       },
     };
   } catch (error) {
@@ -83,7 +38,7 @@ function fetchUnusedImageUrlsFromApi() {
  * On fetch failure, leaves the sheet unchanged.
  */
 function rebuildUnusedImageSheet() {
-  const result = fetchUnusedImageUrlsFromApi();
+  const result = fetchUnusedImageUrlsFromSupabase();
   if (!result.ok) {
     Logger.log('rebuildUnusedImageSheet aborted: ' + result.error);
     throw new Error('rebuildUnusedImageSheet: ' + result.error);
@@ -146,4 +101,4 @@ function cronRebuildUnusedImageSheet() {
 
 this.rebuildUnusedImageSheet = rebuildUnusedImageSheet;
 this.cronRebuildUnusedImageSheet = cronRebuildUnusedImageSheet;
-this.fetchUnusedImageUrlsFromApi = fetchUnusedImageUrlsFromApi;
+this.fetchUnusedImageUrlsFromSupabase = fetchUnusedImageUrlsFromSupabase;

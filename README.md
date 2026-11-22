@@ -12,15 +12,17 @@ Apps Script → プロジェクトの設定 → **スクリプト プロパテ�
 |------------|------|
 | `CHANNEL_ACCESS_TOKEN` | LINE チャネルアクセストークン（push / reply 共用） |
 | `LINE_USERID` | push 先のグループ ID（例: `C…`） |
-| `TSUKKOMI_API_ENDPOINT` | `https://<host>/api/line-ingest` |
-| `TSUKKOMI_API_KEY` | tsukkomi の `LINE_SYNC_API_KEY` と同じ |
+| `SUPABASE_SECRET_KEY` | Supabase server-side secret key（GAS Script Propertiesにのみ保存） |
 
 任意:
 
 | プロパティ | 用途 |
 |------------|------|
 | `TSUKKOMI_GROUP_SHEET` | 回答シート名（省略時は `LINE_USERID`） |
-| `TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT` | unused API のフル URL（省略時は ingest URL から導出） |
+| `SUPABASE_URL` | Supabase project URL（省略時は `src/secret/secret.js` の公開URLを使用） |
+| `STORAGE_BUCKET` | 画像Storage bucket（省略時は `images`） |
+| `STORAGE_FOLDER` | 主画像フォルダー（省略時は `line-sync`） |
+| `STORAGE_EXTRA_FOLDERS` | 追加で一覧するフォルダー（カンマ区切り、省略可） |
 | `LINE_ENDPOINT` | LINE Push API URL（省略時は公式デフォルト） |
 | `BOSYU_BUNSYOU` / `BOSYU_SYASHIN` | 「募集」返信の Forms URL（省略時は `secret.js` の定数） |
 
@@ -32,10 +34,10 @@ Apps Script → トリガー → 次の **4つ** を time-driven で登録する
 
 | 関数名 | 推奨頻度 | 役割 |
 |--------|----------|------|
-| `cronSyncTextTopicsToTsukkomi` | 数分おき | 回答を tsukkomi `/api/line-ingest` へ同期 |
+| `cronSyncTextTopicsToTsukkomi` | 数分おき | 回答をSupabaseへ直接同期 |
 | `linePush` | 任意（お題配信） | 「お題」シートからテキストお題を LINE に push（直前に同期） |
 | `linePushImage` | 任意（写真配信） | 「画像」シートから未使用 URL をランダム pick → LINE に push（直前に同期） |
-| `cronRebuildUnusedImageSheet` | 月1回など | 「画像」シートを unused API の結果で全置換 |
+| `cronRebuildUnusedImageSheet` | 月1回など | Supabase Storageとtopicsを直接照合し、「画像」シートを全置換 |
 
 Web アプリとして公開している場合のエントリは従来どおり `doPost`（トリガーではなくデプロイ）。
 
@@ -51,11 +53,23 @@ Web アプリとして公開している場合のエントリは従来どおり 
 
 `OdaiMessage` / `OdaisyasinMessage` / `OdaiImage` / `OdaiMessageCron`、`fetchUnusedImageUrlsFromApi`、`kaitou` / `sendPushToLine` など。push／`doPost`／rebuild から呼ばれるだけ。
 
-## 画像の流れ（現状）
+## Supabase直接接続の設定
+
+1. Apps Scriptの「プロジェクトの設定」→「スクリプト プロパティ」に`SUPABASE_SECRET_KEY`を登録する。
+2. `SUPABASE_SECRET_KEY`はコード、シート、ログに書かない。`testScriptConfig`は値の内容を出力せず、設定済みかだけを確認する。
+3. 必要に応じて`STORAGE_BUCKET`、`STORAGE_FOLDER`、`STORAGE_EXTRA_FOLDERS`を設定する。
+4. `testScriptConfig`を実行し、必須設定を確認する。
+5. `testSupabaseDirectConnection`を実行し、画像URLをログに出さずに読み取り接続と件数を確認する。
+6. `rebuildUnusedImageSheet`を手動実行し、画像シートの結果を確認する。
+7. LINE同期はテスト用お題・回答で`syncTextTopicAnswersToTsukkomi`を実行し、DBへの書き込みと再実行時の重複防止を確認する。
+
+GASはSupabaseのREST APIとStorage APIを直接呼び出す。LINE同期の管理キーは強い権限を持つため、Apps Scriptの編集権限も自分だけに限定し、漏洩時はSupabaseでキーをローテーションする。
+
+## 画像の流れ（直接接続）
 
 1. 画像を `local-images/inbox/` に置き、tsukkomi-v2 で `pnpm upload:images`（Storage へ。成功後は `done/<hash>.ext` に移動）
 2. 公開 URL を「画像」B列に載せる（手動なら `appendImagePublicUrl`、定期なら月次 rebuild）
 3. 日次の「写真」／`linePushImage` はシートからランダム pick のみ（API は叩かない）
-4. 回答が付いたお題は sync で topics になり、次の月次 rebuild でシートから落ちる
+4. 回答が付いたお題はsyncでtopicsになり、次の月次rebuildがSupabaseから直接取得してシートから落とす
 
-詳細 API は tsukkomi-v2 の `docs/image-upload.md` / `docs/line-sync.md`。
+旧Vercel APIは切り戻し期間が終わるまで残す。直接接続を検証し終える前に、Vercel側APIを削除しない。

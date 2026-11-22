@@ -25,23 +25,12 @@ function getScriptConfig_(key, defaultValue) {
     case 'LINE_ENDPOINT':
       fromGlobal = typeof LINE_ENDPOINT !== 'undefined' ? LINE_ENDPOINT : '';
       break;
-    case 'TSUKKOMI_API_KEY':
-      fromGlobal =
-        typeof TSUKKOMI_API_KEY !== 'undefined' ? TSUKKOMI_API_KEY : '';
-      break;
-    case 'TSUKKOMI_API_ENDPOINT':
-      fromGlobal =
-        typeof TSUKKOMI_API_ENDPOINT !== 'undefined' ? TSUKKOMI_API_ENDPOINT : '';
-      break;
     case 'TSUKKOMI_GROUP_SHEET':
       fromGlobal =
         typeof TSUKKOMI_GROUP_SHEET !== 'undefined' ? TSUKKOMI_GROUP_SHEET : '';
       break;
-    case 'TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT':
-      fromGlobal =
-        typeof TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT !== 'undefined'
-          ? TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT
-          : '';
+    case 'SUPABASE_URL':
+      fromGlobal = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
       break;
     case 'BOSYU_BUNSYOU':
       fromGlobal = typeof BOSYU_BUNSYOU !== 'undefined' ? BOSYU_BUNSYOU : '';
@@ -110,18 +99,20 @@ this.getScriptConfig_ = getScriptConfig_;
 
 /**
  * Apps Script エディタから手動実行: 必須 Script Properties が読めているか確認。
- * 秘密の全文は出さない（長さと先頭数文字のみ）。
+ * 秘密値そのものや一部文字列はログに出さない。
  */
 function testScriptConfig() {
   const required = [
     'CHANNEL_ACCESS_TOKEN',
     'LINE_USERID',
-    'TSUKKOMI_API_KEY',
-    'TSUKKOMI_API_ENDPOINT',
+    'SUPABASE_SECRET_KEY',
   ];
   const optional = [
+    'SUPABASE_URL',
     'TSUKKOMI_GROUP_SHEET',
-    'TSUKKOMI_UNUSED_IMAGE_URLS_ENDPOINT',
+    'STORAGE_BUCKET',
+    'STORAGE_FOLDER',
+    'STORAGE_EXTRA_FOLDERS',
     'LINE_ENDPOINT',
     'BOSYU_BUNSYOU',
     'BOSYU_SYASHIN',
@@ -136,10 +127,9 @@ function testScriptConfig() {
     Logger.log(
       '[ok] ' +
         key +
-        ' len=' +
-        v.length +
-        ' head=' +
-        v.substring(0, Math.min(6, v.length)),
+        (key === 'SUPABASE_SECRET_KEY' || key === 'CHANNEL_ACCESS_TOKEN'
+          ? ' configured'
+          : ' len=' + v.length),
     );
     return true;
   }
