@@ -60,16 +60,16 @@ function supabasePublicStorageUrl_(storagePath) {
 }
 
 function storageObjectStem_(urlOrPath) {
+  const raw = String(urlOrPath || '').split(/[?#]/, 1)[0];
+  const base = raw.split('/').pop() || '';
+  let decodedBase = base;
   try {
-    const raw = /^https?:\/\//i.test(urlOrPath)
-      ? new URL(urlOrPath).pathname
-      : String(urlOrPath);
-    const base = raw.split('/').pop() || '';
-    const stem = base.replace(/\.[a-z0-9]{2,5}$/i, '');
-    return stem || null;
+    decodedBase = decodeURIComponent(base);
   } catch (_error) {
-    return null;
+    // Keep the original segment if it contains malformed percent encoding.
   }
+  const stem = decodedBase.replace(/\.[a-z0-9]{2,5}$/i, '');
+  return stem || null;
 }
 
 function listUsedImageKeysDirect_() {
@@ -168,8 +168,13 @@ function listUnusedImageUrlsDirect_() {
   });
 
   const urls = [];
+  let matchedKeyCount = 0;
   Object.keys(bestPathByKey).forEach(function (key) {
-    if (!used.keys[key]) urls.push(supabasePublicStorageUrl_(bestPathByKey[key]));
+    if (used.keys[key]) {
+      matchedKeyCount += 1;
+    } else {
+      urls.push(supabasePublicStorageUrl_(bestPathByKey[key]));
+    }
   });
 
   return {
@@ -179,6 +184,7 @@ function listUnusedImageUrlsDirect_() {
     answeredUrlCount: Object.keys(used.urls).length,
     usedUrlCount: Object.keys(used.urls).length,
     usedKeyCount: Object.keys(used.keys).length,
+    matchedKeyCount,
     usedTopicCount: used.usedTopicCount,
     unusedCount: urls.length,
     folders,
@@ -192,18 +198,19 @@ function normalizeLineAnswerTextDirect_(text) {
 function ownStorageImagePathDirect_(imageUrl) {
   const config = getSupabaseDirectConfig_();
   const bucket = getScriptConfig_('STORAGE_BUCKET', 'images');
-  let parsed;
-  try {
-    parsed = new URL(imageUrl);
-  } catch (_error) {
-    throw new Error('Image topic URL must be a valid URL');
-  }
-  const expected = new URL(config.url);
+  const expected = String(config.url).match(/^https:\/\/([^/]+)(?:\/|$)/i);
+  const parsed = String(imageUrl || '').match(/^https:\/\/([^/]+)(\/[^?#]*)?(?:[?#].*)?$/i);
+  if (!expected || !parsed) throw new Error('Image topic URL must be a valid HTTPS URL');
   const prefix = '/storage/v1/object/public/' + bucket + '/';
-  if (parsed.host !== expected.host || parsed.protocol !== 'https:' || !parsed.pathname.startsWith(prefix)) {
+  const pathname = parsed[2] || '/';
+  if (parsed[1].toLowerCase() !== expected[1].toLowerCase() || !pathname.startsWith(prefix)) {
     throw new Error('Image topic URL must be this project\'s public Storage URL');
   }
-  return decodeURIComponent(parsed.pathname.slice(prefix.length));
+  try {
+    return decodeURIComponent(pathname.slice(prefix.length));
+  } catch (_error) {
+    throw new Error('Image topic URL contains invalid path encoding');
+  }
 }
 
 function validateLineSyncPayloadDirect_(payload) {
@@ -378,6 +385,8 @@ function testSupabaseDirectConnection() {
       JSON.stringify({
         storageCount: result.storageCount,
         usedTopicCount: result.usedTopicCount,
+        usedKeyCount: result.usedKeyCount,
+        matchedKeyCount: result.matchedKeyCount,
         unusedCount: result.unusedCount,
         folders: result.folders,
       }),
@@ -385,6 +394,82 @@ function testSupabaseDirectConnection() {
   return true;
 }
 
+/** Read-only preflight for LINE sync URL parsing and REST filters. */
+function testLineSyncPreflight() {
+  const imageTopics = supabaseDirectRequest_(
+    '/rest/v1/topics?select=id,image&image=not.is.null&order=id.asc&limit=1',
+    'get',
+  ) || [];
+  if (!imageTopics.length) throw new Error('Preflight requires at least one image topic');
+
+  const imageTopic = imageTopics[0];
+  const imagePath = ownStorageImagePathDirect_(imageTopic.image);
+  if (!imagePath || !storageObjectStem_(imageTopic.image)) {
+    throw new Error('Image topic URL parsing failed');
+  }
+  const imageLookup = findDirect_(
+    'topics',
+    'select=id,image&image=eq.' + supabaseQueryValue_(imageTopic.image) + '&limit=1',
+  );
+  if (!imageLookup || String(imageLookup.id) !== String(imageTopic.id)) {
+    throw new Error('Exact image-topic lookup failed');
+  }
+
+  const textTopics = supabaseDirectRequest_(
+    '/rest/v1/topics?select=id,title&image=is.null&order=id.asc&limit=1',
+    'get',
+  ) || [];
+  let textTopicLookupPassed = false;
+  if (textTopics.length) {
+    const textTopic = textTopics[0];
+    const textLookup = findDirect_(
+      'topics',
+      'select=id,title&title=eq.' + supabaseQueryValue_(textTopic.title) + '&image=is.null&limit=1',
+    );
+    textTopicLookupPassed = Boolean(textLookup && String(textLookup.id) === String(textTopic.id));
+    if (!textTopicLookupPassed) throw new Error('Exact text-topic lookup failed');
+  }
+
+  const profiles = supabaseDirectRequest_(
+    '/rest/v1/profiles?select=id,line_id&line_id=not.is.null&order=created_at.asc&limit=1',
+    'get',
+  ) || [];
+  let profileLookupPassed = false;
+  if (profiles.length) {
+    const profile = profiles[0];
+    const profileLookup = findDirect_(
+      'profiles',
+      'select=id,name&line_id=eq.' + supabaseQueryValue_(profile.line_id) + '&limit=1',
+    );
+    profileLookupPassed = Boolean(profileLookup && String(profileLookup.id) === String(profile.id));
+    if (!profileLookupPassed) throw new Error('Exact LINE profile lookup failed');
+  }
+
+  const sampleAnswer = {
+    text: 'preflight only',
+    lineUserId: 'preflight-only',
+    submittedAt: new Date().toISOString(),
+  };
+  validateLineSyncPayloadDirect_({
+    topic: { kind: 'text', title: 'preflight only' },
+    answers: [sampleAnswer],
+  });
+  validateLineSyncPayloadDirect_({
+    topic: { kind: 'image', title: 'preflight only', image: imageTopic.image },
+    answers: [sampleAnswer],
+  });
+
+  Logger.log('testLineSyncPreflight: PASS ' + JSON.stringify({
+    imageUrlValidation: true,
+    imageTopicLookup: true,
+    textTopicLookup: textTopicLookupPassed,
+    profileLookup: profileLookupPassed,
+    writesPerformed: false,
+  }));
+  return true;
+}
+
 this.listUnusedImageUrlsDirect_ = listUnusedImageUrlsDirect_;
 this.ingestLineAnswersDirect = ingestLineAnswersDirect;
 this.testSupabaseDirectConnection = testSupabaseDirectConnection;
+this.testLineSyncPreflight = testLineSyncPreflight;

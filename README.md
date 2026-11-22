@@ -62,7 +62,8 @@ Web アプリとして公開している場合のエントリは従来どおり 
 5. `testScriptConfig`を実行し、必須設定を確認する。
 6. `testSupabaseDirectConnection`を実行し、画像URLをログに出さずに読み取り接続と件数を確認する。
 7. `rebuildUnusedImageSheet`を手動実行し、画像シートの結果を確認する。
-8. LINE同期はテスト用お題・回答で`syncTextTopicAnswersToTsukkomi`を実行し、DBへの書き込みと再実行時の重複防止を確認する。
+8. `testLineSyncPreflight`を実行する。既存の画像URL・トピック・プロフィール検索と入力検証を確認し、DBへは書き込まない。
+9. LINE同期はテスト用お題・回答で`syncTextTopicAnswersToTsukkomi`を実行し、DBへの書き込みと再実行時の重複防止を確認する。
 
 旧プロパティを日付付きに変更するのは確認を明確にするための一時措置。問題が起きて旧コードへ戻す場合は、プロパティ名を元に戻し、旧GASコードも再デプロイする。新接続の検証完了後、旧プロパティは削除できる。`clasp push`ではScript Propertiesは変更されない。
 
